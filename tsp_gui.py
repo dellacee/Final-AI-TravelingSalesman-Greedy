@@ -129,3 +129,112 @@ class TSPGUI:
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(0, weight=1)
     
+    def generate_random_cities(self):
+        try:
+            n = int(self.num_cities_var.get())
+            if n < 3:
+                messagebox.showerror("Lỗi", "Số lượng thành phố phải >= 3")
+                return
+           
+            self.cities = [(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(n)]
+            self.plot_cities()
+            messagebox.showinfo("Thành công", f"Đã tạo {n} thành phố ngẫu nhiên")
+        except ValueError:
+            messagebox.showerror("Lỗi", "Vui lòng nhập số hợp lệ")
+   
+   
+   
+    def plot_cities(self):
+        # Clear previous plot
+        for widget in self.city_tab.winfo_children():
+            widget.destroy()
+       
+        if not self.cities:
+            return
+       
+        fig, ax = plt.subplots(figsize=(8, 6))
+        x_coords = [city[0] for city in self.cities]
+        y_coords = [city[1] for city in self.cities]
+       
+        ax.scatter(x_coords, y_coords, c='red', s=100, zorder=3)
+        for i, (x, y) in enumerate(self.cities):
+            ax.annotate(str(i), (x, y), xytext=(5, 5), textcoords='offset points')
+       
+        ax.set_title(f"Bản đồ {len(self.cities)} thành phố", fontsize=14, fontweight='bold')
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.grid(True, alpha=0.3)
+       
+        canvas = FigureCanvasTkAgg(fig, self.city_tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+   
+    def solve_all(self):
+        if not self.cities or len(self.cities) < 3:
+            messagebox.showerror("Lỗi", "Vui lòng tạo hoặc tải dữ liệu thành phố trước")
+            return
+       
+        # Clear previous results
+        for item in self.results_tree.get_children():
+            self.results_tree.delete(item)
+       
+        self.results = {}
+       
+        # Get ACO parameters
+        try:
+            n_ants = int(self.n_ants_var.get())
+            n_iterations = int(self.n_iterations_var.get())
+        except ValueError:
+            messagebox.showerror("Lỗi", "Tham số ACO không hợp lệ")
+            return
+       
+        algorithms = [
+            ("Nearest Neighbor", NearestNeighbor(self.cities)),
+            ("Nearest Insertion", NearestInsertion(self.cities)),
+            ("Farthest Insertion", FarthestInsertion(self.cities)),
+            ("Ant Colony Optimization", AntColonyOptimization(
+                self.cities, n_ants=n_ants, n_iterations=n_iterations
+            ))
+        ]
+       
+        # Solve with each algorithm
+        for name, solver in algorithms:
+            tour, distance, time_taken = solver.solve()
+            time_complexity, space_complexity = solver.get_complexity()
+           
+            # Get steps for visualization
+            try:
+                _, _, _, steps = solver.solve_with_steps()
+            except:
+                steps = []
+           
+            self.results[name] = {
+                'tour': tour,
+                'distance': distance,
+                'time': time_taken,
+                'time_complexity': time_complexity,
+                'space_complexity': space_complexity,
+                'steps': steps
+            }
+       
+        # Find best distance for comparison
+        best_distance = min(r['distance'] for r in self.results.values())
+       
+        # Update results table
+        for name in ["Nearest Neighbor", "Nearest Insertion", "Farthest Insertion", "Ant Colony Optimization"]:
+            result = self.results[name]
+            improvement = ((result['distance'] - best_distance) / best_distance) * 100 if best_distance > 0 else 0
+           
+            self.results_tree.insert("", tk.END, values=(
+                name,
+                f"{result['distance']:.2f}",
+                f"{result['time']:.4f}",
+                f"{improvement:.2f}%",
+                result['time_complexity'],
+                result['space_complexity']
+            ))
+       
+        # Visualize results
+        self.plot_comparison()
+        self.setup_process_visualization()
+
