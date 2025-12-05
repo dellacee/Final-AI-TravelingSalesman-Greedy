@@ -238,110 +238,111 @@ class TSPGUI:
         self.plot_comparison()
         self.setup_process_visualization()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+          def plot_comparison(self):
+        # Clear previous plot
+        for widget in self.comparison_tab.winfo_children():
+            widget.destroy()
+       
+        if not self.results:
+            return
+       
+        fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+        axes = axes.flatten()
+       
+        algorithm_names = ["Nearest Neighbor", "Nearest Insertion", "Farthest Insertion", "Ant Colony Optimization"]
+        colors = ['blue', 'green', 'orange', 'red']
+       
+        for idx, name in enumerate(algorithm_names):
+            if name not in self.results:
+                continue
+           
+            ax = axes[idx]
+            result = self.results[name]
+            tour = result['tour']
+           
+            # Plot cities
+            x_coords = [self.cities[i][0] for i in range(len(self.cities))]
+            y_coords = [self.cities[i][1] for i in range(len(self.cities))]
+            ax.scatter(x_coords, y_coords, c='red', s=50, zorder=3)
+           
+            # Plot tour (khép kín từ điểm cuối về điểm đầu)
+            tour_x = [self.cities[city][0] for city in tour] + [self.cities[tour[0]][0]]
+            tour_y = [self.cities[city][1] for city in tour] + [self.cities[tour[0]][1]]
+            ax.plot(tour_x, tour_y, color=colors[idx], linewidth=2, alpha=0.7, zorder=2)
+           
+            # Highlight thành phố 0 (điểm bắt đầu)
+            ax.scatter(self.cities[0][0], self.cities[0][1],
+                     c='orange', s=100, zorder=4, marker='o', edgecolors='darkorange', linewidths=2)
+           
+            ax.set_title(f"{name}\nKhoảng cách: {result['distance']:.2f}\nThời gian: {result['time']:.4f}s",
+                        fontsize=10, fontweight='bold')
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
+            ax.grid(True, alpha=0.3)
+       
+        plt.tight_layout()
+       
+        canvas = FigureCanvasTkAgg(fig, self.comparison_tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+   
+    def setup_process_visualization(self):
+        """Setup process visualization tab with algorithm selector and controls"""
+        # Clear previous content
+        for widget in self.process_tab.winfo_children():
+            widget.destroy()
+       
+        if not self.results:
+            return
+       
+        # Control frame
+        control_frame = ttk.Frame(self.process_tab)
+        control_frame.pack(fill=tk.X, padx=10, pady=10)
+       
+        ttk.Label(control_frame, text="Chọn thuật toán:").pack(side=tk.LEFT, padx=5)
+        self.algorithm_var = tk.StringVar(value="Nearest Neighbor")
+        algo_combo = ttk.Combobox(control_frame, textvariable=self.algorithm_var,
+                                 values=["Nearest Neighbor", "Nearest Insertion",
+                                        "Farthest Insertion", "Ant Colony Optimization"],
+                                 state="readonly", width=25)
+        algo_combo.pack(side=tk.LEFT, padx=5)
+        algo_combo.bind("<<ComboboxSelected>>", self.on_algorithm_change)
+       
+        # Navigation buttons
+        nav_frame = ttk.Frame(control_frame)
+        nav_frame.pack(side=tk.LEFT, padx=20)
+       
+        ttk.Button(nav_frame, text="◀◀", command=lambda: self.change_step(-10)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(nav_frame, text="◀", command=lambda: self.change_step(-1)).pack(side=tk.LEFT, padx=2)
+       
+        self.step_label = ttk.Label(nav_frame, text="Bước: 0/0", width=15)
+        self.step_label.pack(side=tk.LEFT, padx=5)
+       
+        ttk.Button(nav_frame, text="▶", command=lambda: self.change_step(1)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(nav_frame, text="▶▶", command=lambda: self.change_step(10)).pack(side=tk.LEFT, padx=2)
+       
+        # Auto play button
+        self.auto_play_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(control_frame, text="Tự động phát",
+                       variable=self.auto_play_var,
+                       command=self.toggle_auto_play).pack(side=tk.LEFT, padx=10)
+       
+        # Speed control
+        ttk.Label(control_frame, text="Tốc độ:").pack(side=tk.LEFT, padx=5)
+        self.speed_var = tk.DoubleVar(value=500)
+        speed_scale = ttk.Scale(control_frame, from_=100, to=2000,
+                               variable=self.speed_var, orient=tk.HORIZONTAL, length=100)
+        speed_scale.pack(side=tk.LEFT, padx=5)
+       
+        # Plot frame
+        self.process_plot_frame = ttk.Frame(self.process_tab)
+        self.process_plot_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+       
+        self.process_canvas = None
+        self.current_step = 0
+        self.current_algorithm = "Nearest Neighbor"
+       
+        self.update_process_plot()
 
 
     def on_algorithm_change(self, event=None):
