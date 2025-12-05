@@ -238,3 +238,295 @@ class TSPGUI:
         self.plot_comparison()
         self.setup_process_visualization()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def on_algorithm_change(self, event=None):
+        """Handle algorithm change - reset step and stop auto play"""
+        # Dừng auto play nếu đang chạy
+        if self.auto_play_var.get():
+            self.auto_play_var.set(False)
+            if self.auto_play_job:
+                self.root.after_cancel(self.auto_play_job)
+                self.auto_play_job = None
+       
+        # Reset về bước đầu tiên
+        self.current_step = 0
+       
+        # Cập nhật plot
+        self.update_process_plot()
+   
+    def update_process_plot(self):
+        """Update the process visualization plot"""
+        algorithm = self.algorithm_var.get()
+       
+        # Nếu đổi thuật toán, reset về bước đầu
+        if algorithm != self.current_algorithm:
+            self.current_step = 0
+            self.current_algorithm = algorithm
+       
+        if algorithm not in self.results or not self.results[algorithm].get('steps'):
+            # Clear plot
+            for widget in self.process_tab.winfo_children():
+                if isinstance(widget, ttk.Frame) and widget.winfo_children():
+                    for child in widget.winfo_children():
+                        if isinstance(child, ttk.Frame):
+                            for w in child.winfo_children():
+                                w.destroy()
+            return
+       
+        steps = self.results[algorithm]['steps']
+        if not steps:
+            return
+       
+        # Limit current step
+        self.current_step = min(self.current_step, len(steps) - 1)
+        self.current_step = max(0, self.current_step)
+       
+        step_data = steps[self.current_step]
+       
+        # Update step label if it exists
+        if hasattr(self, 'step_label') and self.step_label:
+            self.step_label.config(text=f"Bước: {self.current_step + 1}/{len(steps)}")
+       
+        # Clear previous plot
+        if self.process_plot_frame:
+            for widget in self.process_plot_frame.winfo_children():
+                widget.destroy()
+       
+        # Create plot
+        fig, ax = plt.subplots(figsize=(10, 8))
+       
+        # Plot all cities
+        x_coords = [city[0] for city in self.cities]
+        y_coords = [city[1] for city in self.cities]
+        ax.scatter(x_coords, y_coords, c='lightgray', s=100, zorder=1, alpha=0.5)
+       
+        # Plot cities with labels
+        for i, (x, y) in enumerate(self.cities):
+            ax.scatter(x, y, c='red', s=150, zorder=3)
+            ax.annotate(str(i), (x, y), xytext=(5, 5), textcoords='offset points',
+                       fontsize=10, fontweight='bold')
+       
+        # Plot current tour if available
+        if step_data.get('tour'):
+            tour = step_data['tour']
+            if len(tour) > 1:
+                tour_x = [self.cities[city][0] for city in tour]
+                tour_y = [self.cities[city][1] for city in tour]
+               
+                # Draw partial tour (các cạnh giữa các thành phố liên tiếp)
+                for i in range(len(tour) - 1):
+                    ax.plot([tour_x[i], tour_x[i+1]], [tour_y[i], tour_y[i+1]],
+                           'b-', linewidth=2, alpha=0.6, zorder=2)
+               
+                # Nếu tour đã hoàn thành (bước cuối), vẽ cạnh khép kín từ điểm cuối về điểm đầu
+                if self.current_step == len(steps) - 1 and len(tour) > 2:
+                    # Vẽ cạnh khép kín
+                    ax.plot([tour_x[-1], tour_x[0]], [tour_y[-1], tour_y[0]],
+                           'b-', linewidth=2, alpha=0.6, zorder=2, linestyle='--', label='Khép kín')
+               
+                # Highlight selected city
+                if step_data.get('selected') is not None:
+                    selected = step_data['selected']
+                    ax.scatter(self.cities[selected][0], self.cities[selected][1],
+                             c='green', s=300, zorder=4, marker='*', edgecolors='darkgreen', linewidths=2)
+               
+                # Highlight current city
+                if step_data.get('current') is not None:
+                    current = step_data['current']
+                    ax.scatter(self.cities[current][0], self.cities[current][1],
+                             c='blue', s=250, zorder=4, marker='s', edgecolors='darkblue', linewidths=2)
+               
+                # Highlight thành phố 0 (điểm bắt đầu)
+                ax.scatter(self.cities[0][0], self.cities[0][1],
+                         c='orange', s=200, zorder=5, marker='o', edgecolors='darkorange', linewidths=2)
+       
+        # Title with description
+        title = f"{algorithm}\n{step_data.get('description', '')}"
+        ax.set_title(title, fontsize=12, fontweight='bold', pad=15)
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.grid(True, alpha=0.3)
+       
+        if self.process_plot_frame:
+            canvas = FigureCanvasTkAgg(fig, self.process_plot_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            self.process_canvas = canvas
+   
+    def change_step(self, delta):
+        """Change current step"""
+        algorithm = self.algorithm_var.get()
+        if algorithm not in self.results or not self.results[algorithm].get('steps'):
+            return
+       
+        steps = self.results[algorithm]['steps']
+        self.current_step += delta
+        self.current_step = max(0, min(self.current_step, len(steps) - 1))
+        self.update_process_plot()
+   
+    def toggle_auto_play(self):
+        """Toggle auto play"""
+        if self.auto_play_var.get():
+            self.auto_play()
+        else:
+            if self.auto_play_job:
+                self.root.after_cancel(self.auto_play_job)
+                self.auto_play_job = None
+   
+    def auto_play(self):
+        """Auto play steps"""
+        algorithm = self.algorithm_var.get()
+        if algorithm not in self.results or not self.results[algorithm].get('steps'):
+            self.auto_play_var.set(False)
+            return
+       
+        steps = self.results[algorithm]['steps']
+        if self.current_step < len(steps) - 1:
+            self.current_step += 1
+            self.update_process_plot()
+            delay = int(self.speed_var.get())
+            self.auto_play_job = self.root.after(delay, self.auto_play)
+        else:
+            self.auto_play_var.set(False)
+   
+    def clear_results(self):
+        self.results = {}
+        for item in self.results_tree.get_children():
+            self.results_tree.delete(item)
+       
+        if self.auto_play_job:
+            self.root.after_cancel(self.auto_play_job)
+            self.auto_play_job = None
+        self.auto_play_var.set(False)
+       
+        for widget in self.comparison_tab.winfo_children():
+            widget.destroy()
+       
+        for widget in self.process_tab.winfo_children():
+            widget.destroy()
+
+
+
+
+def main():
+    root = tk.Tk()
+    app = TSPGUI(root)
+    root.mainloop()
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
