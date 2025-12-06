@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "n_cities": 20,
+    "timestamp": "2025-12-03T13:16:47.787497"
+  },
+  "results": {
+    "nearest_neighbor": {
+      "n_runs": 5,
+      "time": {
+        "mean": 0.000466,
+        "std": 2.1e-05,
+        "min": 0.000444,
+        "max": 0.000496,
+        "median": 0.000465
+      },
+      "distance": {
+        "mean": 465.04,
+        "std": 0.0,
+        "min": 465.04,
+        "max": 465.04,
+        "median": 465.04
+      },
+      "memory_mb": {
+        "mean": 0.01,
+        "std": 0.0,
+        "max": 0.01
+      }
+    },
+    "nearest_insertion": {
+      "n_runs": 5,
+      "time": {
+        "mean": 0.016748,
+        "std": 0.00103,
+        "min": 0.015933,
+        "max": 0.018533,
+        "median": 0.016429
+      },
+      "distance": {
+        "mean": 465.46,
+        "std": 0.0,
+        "min": 465.46,
+        "max": 465.46,
+        "median": 465.46
+      },
+      "memory_mb": {
+        "mean": 0.01,
+        "std": 0.0,
+        "max": 0.01
+      }
+    },
+    "farthest_insertion": {
+      "n_runs": 5,
+      "time": {
+        "mean": 0.006681,
+        "std": 0.001127,
+        "min": 0.00552,
+        "max": 0.007937,
+        "median": 0.006425
+      },
+      "distance": {
+        "mean": 386.43,
+        "std": 0.0,
+        "min": 386.43,
+        "max": 386.43,
+        "median": 386.43
+      },
+      "memory_mb": {
+        "mean": 0.01,
+        "std": 0.0,
+        "max": 0.01
+      }
+    },
+    "ant_colony": {
+      "n_runs": 5,
+      "time": {
+        "mean": 4.825243,
+        "std": 0.274716,
+        "min": 4.510575,
+        "max": 5.133265,
+        "median": 4.740448
+      },
+      "distance": {
+        "mean": 387.83,
+        "std": 1.14,
+        "min": 386.63,
+        "max": 389.13,
+        "median": 388.39
+      },
+      "memory_mb": {
+        "mean": 0.04,
+        "std": 0.0,
+        "max": 0.04
+      }
+    }
+  }
+}
