@@ -238,7 +238,7 @@ class TSPGUI:
         self.plot_comparison()
         self.setup_process_visualization()
 
-          def plot_comparison(self):
+    def plot_comparison(self):
         # Clear previous plot
         for widget in self.comparison_tab.winfo_children():
             widget.destroy()
